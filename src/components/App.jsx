@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "./Navbar";
+import Main from "./Main";
 import DaiToken from "../abis/DaiToken.json";
 import DappToken from "../abis/DappToken.json";
 import TokenFarm from "../abis/TokenFarm.json";
@@ -84,6 +85,32 @@ const App = () => {
   const [stakingBalance, setStakingBalance] = useState("0");
   const [loading, setLoading] = useState(true);
 
+  //cant settle for pure functions
+  const stakeTokens = (amount) => {
+    setLoading(true);
+    daiToken.methods
+      .approve(tokenFarm._address, amount)
+      .send({ from: account })
+      .on("transactionHash", (hash) => {
+        tokenFarm.methods
+          .stakeTokens(amount)
+          .send({ from: account })
+          .on("transactionHash", () => {
+            setLoading(false);
+          });
+      });
+  };
+
+  const unstakeTokens = () => {
+    setLoading(true);
+    tokenFarm.methods
+      .unstakeTokens()
+      .send({ from: account })
+      .on("transactionHash", (hash) => {
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
     loadWeb3(
       setAccount,
@@ -95,7 +122,7 @@ const App = () => {
       setStakingBalance,
       setLoading
     );
-  });
+  }, []);
 
   return (
     <div>
@@ -113,7 +140,17 @@ const App = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               ></a>
-              <h1>Hello, World!</h1>
+              {loading ? (
+                <p id="loader" className="text-center"></p>
+              ) : (
+                <Main
+                  daiTokenBalance={daiTokenBalance}
+                  dappTokenBalance={dappTokenBalance}
+                  stakingBalance={stakingBalance}
+                  stakeTokens={stakeTokens}
+                  unStakeTokens={unstakeTokens}
+                />
+              )}
             </div>
           </main>
         </div>
